@@ -1,0 +1,39 @@
+#cleanup
+helm uninstall runner -n ghactions
+kubectl delete deployment --all -n ghactions
+kubectl delete deployment --all -n cert-manager
+kubectl delete service cert-manager-webhook -n cert-manager
+kubectl delete secrets --all -n ghactions
+kubectl delete secrets --all -n cert-manager
+
+#install
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm search repo cert-manager
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --version v1.17.1 \
+  --set prometheus.enabled=false \
+  --set installCRDs=true
+
+kubectl create secret generic controller-manager \
+    -n ghactions \
+    --from-literal=github_token=ghp_MVwp8fgA
+
+kubectl create secret docker-registry us01-harbor-secret \
+  --namespace=ghactions \
+  --docker-server=us01-harbor.internal.synopsys.com \
+  --docker-username=svc-vulnpatch \
+  --docker-password=RQBkaX!=7 \
+  --docker-email=chinnama@synopsys.com
+
+helm repo add actions-runner-controller https://actions-runner-controller.github.io/actions-runner-controller
+helm repo update
+helm search repo actions
+helm install runner \
+    actions-runner-controller/actions-runner-controller \
+    --namespace ghactions \
+    --version 0.23.7 \
+    --set syncPeriod=1m
+kubectl set env deploy runner-actions-runner-controller -c manager GITHUB_ENTERPRISE_URL="https://snpsghes-eda.internal.synopsys.com" --namespace ghactions
