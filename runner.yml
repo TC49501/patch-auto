@@ -1,0 +1,22 @@
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: gha-sh-runner-1
+  namespace: ghactions
+spec:
+  replicas: 1
+  template:
+    spec:
+      repository: it/vulnpatch
+      labels:
+        - arc
+        - kubernetes
+      env: []
+      volumeMounts:
+        - name: nfs-volume
+          mountPath: /mnt/nfs
+      volumes:
+        - name: nfs-volume
+          persistentVolumeClaim:
+            claimName: nfs-pvc
+
